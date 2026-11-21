@@ -1,0 +1,122 @@
+local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/xHeptc/Kavo-UI-Library/main/source.lua"))()
+local Window = Library.CreateLib("Jazz hub", "Ocean")
+
+-- MAIN --
+local Main = Window:NewTab("Main")
+local MainSection = Main:NewSection("Movement")
+
+MainSection:NewButton("Auto farm", "It helps you get levels without doing anything", function()
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/tlredz/Scripts/refs/heads/main/main.luau"))()
+end)
+
+MainSection:NewToggle("Super-Human", "Go fast and jump high", function(state)
+    local Players = game:GetService("Players")
+    local player = Players.LocalPlayer
+    local character = player and (player.Character or player.CharacterAdded:Wait())
+    local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+    if not humanoid then return end
+
+    if state then
+        humanoid.UseJumpPower = true
+        humanoid.WalkSpeed = 120
+        humanoid.JumpPower = 120
+    else
+        humanoid.WalkSpeed = 16
+        humanoid.JumpPower = 50
+    end
+end)
+
+-- UI SETTINGS (Keybind to Open/Close on PC) --
+local SettingsTab = Window:NewTab("Settings")
+local UISection = SettingsTab:NewSection("UI Controls")
+
+UISection:NewKeybind("Toggle UI", "Press key to open or close the menu", Enum.KeyCode.RightControl, function()
+    Library:ToggleUI()
+end)
+
+-- FLOATING OPEN/CLOSE BUTTON (For Mobile & Mouse) --
+local Players = game:GetService("Players")
+local UserInputService = game:GetService("UserInputService")
+local player = Players.LocalPlayer
+
+local function getGuiParent()
+    local ok, core = pcall(function()
+        return game:GetService("CoreGui")
+    end)
+    if ok and core then
+        local testOk = pcall(function()
+            local folder = Instance.new("Folder")
+            folder.Parent = core
+            folder:Destroy()
+        end)
+        if testOk then
+            return core
+        end
+    end
+    return player:WaitForChild("PlayerGui")
+end
+
+local ToggleGui = Instance.new("ScreenGui")
+local ToggleBtn = Instance.new("TextButton")
+local Corner = Instance.new("UICorner")
+
+ToggleGui.Name = "JazzHubToggle"
+ToggleGui.ResetOnSpawn = false
+ToggleGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+ToggleGui.Parent = getGuiParent()
+
+ToggleBtn.Name = "ToggleButton"
+ToggleBtn.Parent = ToggleGui
+ToggleBtn.BackgroundColor3 = Color3.fromRGB(30, 30, 45)
+ToggleBtn.Position = UDim2.new(0, 20, 0.5, -25)
+ToggleBtn.Size = UDim2.new(0, 50, 0, 50)
+ToggleBtn.Font = Enum.Font.GothamBold
+ToggleBtn.Text = "JH"
+ToggleBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+ToggleBtn.TextSize = 16
+ToggleBtn.Active = true
+
+Corner.CornerRadius = UDim.new(1, 0)
+Corner.Parent = ToggleBtn
+
+-- Smooth drag support for both touch (mobile) and mouse (PC)
+local dragging = false
+local dragStart = Vector2.zero
+local startPos = UDim2.zero
+local moved = false
+
+ToggleBtn.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        dragging = true
+        moved = false
+        dragStart = input.Position
+        startPos = ToggleBtn.Position
+
+        input.Changed:Connect(function()
+            if input.UserInputState == Enum.UserInputState.End then
+                dragging = false
+            end
+        end)
+    end
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+    if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+        local delta = input.Position - dragStart
+        if delta.Magnitude > 6 then
+            moved = true
+        end
+        ToggleBtn.Position = UDim2.new(
+            startPos.X.Scale,
+            startPos.X.Offset + delta.X,
+            startPos.Y.Scale,
+            startPos.Y.Offset + delta.Y
+        )
+    end
+end)
+
+ToggleBtn.MouseButton1Click:Connect(function()
+    if not moved then
+        Library:ToggleUI()
+    end
+end)
